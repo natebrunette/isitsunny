@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Is it sunny?</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <style>
+        .answer {
+            font-family: arial;
+            font-size: 100px;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript">
+        // check if geolocation is supported
+        if (navigator.geolocation) {
+            // get current position
+            navigator.geolocation.getCurrentPosition(
+                    positionCallback,
+                    displayError,
+                    {enableHighAccuracy: true}
+            )
+        } else {
+            // geolocation is not supported
+            output('Your browser sucks.')
+        }
+
+        /**
+         * Callback for html5 geolocation
+         *
+         * @param geoposition
+         */
+        function positionCallback(geoposition) {
+            // get latitude and longitude
+            var latitude = geoposition.coords.latitude;
+            var longitude = geoposition.coords.longitude;
+
+            // make api call
+            $.ajax({
+                url: 'http://api.wunderground.com/api/d8322fe71dbc07d4/geolookup/conditions/astronomy/q/' + latitude + ',' + longitude + '.json',
+                dataType: 'jsonp',
+                success: function (response) {
+                    var city = response.location.city;
+                    var weather = response.current_observation.weather;
+                    var currentTime = createTime(response.moon_phase.current_time);
+                    var sunrise = createTime(response.moon_phase.sunrise);
+                    var sunset = createTime(response.moon_phase.sunset);
+                    var isNight = checkNight(currentTime, sunrise, sunset);
+
+                    if (city === 'Philadelphia') {
+                        output('Yes');
+                    } else if (isNight) {
+                        output('No')
+                    } else if (weather === 'Clear') {
+                        output('Yes');
+                    } else {
+                        output('No');
+                    }
+                }
+            })
+        }
+
+        /**
+         * User did not allow
+         */
+        function displayError() {
+            output('You Suck')
+        }
+
+        /**
+         * Create time comparable time
+         *
+         * @param time
+         * @returns {number}
+         */
+        function createTime(time) {
+            return parseInt(time.hour) + parseInt(time.minute) / 60;
+        }
+
+        /**
+         * See if it's night
+         *
+         * @param currentTime
+         * @param sunrise
+         * @param sunset
+         * @returns {boolean}
+         */
+        function checkNight(currentTime, sunrise, sunset) {
+            return (currentTime >= sunset && currentTime < 24) || (currentTime < sunrise && currentTime >= 0);
+        }
+
+        /**
+         * Helper to output something to the screen
+         *
+         * @param answer
+         */
+        function output(answer) {
+            $('body').append("<div class='answer'>" + answer + "</div>")
+        }
+    </script>
+</body>
+</html>
